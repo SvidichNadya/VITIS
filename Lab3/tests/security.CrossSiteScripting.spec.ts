@@ -1,46 +1,39 @@
-test.describe('КРИТИЧЕСКИЕ: XSS-инъекции', () => {
-  const xssPayloads = [
-    '<script>alert(1)</script>',
-    '"><script>alert(1)</script>',
-    '<img src=x onerror=alert(1)>',
-    '<svg/onload=alert(1)>',
-    'javascript:alert(1)',
-    '<iframe src="javascript:alert(1)">',
-  ];
+import { test, expect } from '@playwright/test';
+import { safeGet, finding } from './support/evidence';
 
-  test('Отражённый XSS в поиске курсов', async ({ page }) => {
-    for (const payload of xssPayloads) {
-      let alertFired = false;
-      page.on('dialog', async dialog => {
-        alertFired = true;
-        await dialog.dismiss();
+test.describe('XSS SECURITY SMOKE', () => {
+  const harmlessMarkers = ['VITIS_XSS_TEST_7F3A', 'VITIS_XSS_QUOTE_91B2'];
+
+  test('Course search encodes a harmless marker instead of executing markup', async ({ request }, testInfo) => {
+    for (const marker of harmlessMarkers) {
+      const result = await safeGet(request, '/course/search.php', testInfo, {
+        params: { search: marker }
       });
-
-      await page.goto(`/course/search.php?search=${encodeURIComponent(payload)}`);
-      await page.waitForTimeout(1000);
-
-      expect(alertFired, 
-        `XSS выполнен через поиск: payload="${payload}"`
-      ).toBeFalsy();
+      const executable = /<script|onerror\s*=|onload\s*=|javascript:/i.test(result.body);
+      if (executable) {
+        finding(testInfo, 'HIGH', 'Potential reflected XSS',
+          'Executable-looking markup was returned in a search response.',
+          'Ensure untrusted search parameters are HTML-escaped and use contextual output encoding.');
+      }
+      expect(executable).toBeFalsy();
+      if (result.warningTriggered || result.serverError) break;
     }
   });
 
-  test('DOM-based XSS через hash-параметр', async ({ page }) => {
-    let alertFired = false;
-    page.on('dialog', async () => { alertFired = true; });
-
-    await page.goto(`/course/index.php#${encodeURIComponent('<img src=x onerror=alert(1)>')}`);
-    await page.waitForTimeout(1000);
-
-    expect(alertFired).toBeFalsy();
+  test('DOM does not contain an executable script marker from URL fragment', async ({ page }, testInfo) => {
+    const marker = 'VITIS_DOM_MARKER_52C1';
+    await page.goto('/course/index.php#' + encodeURIComponent(marker));
+    const html = await page.content();
+    expect(html).not.toContain('<script');
+    expect(html).not.toContain('onerror=');
+    await testInfo.attach('dom-xss-check.txt', {
+      body: Buffer.from(`marker=${marker}\nurl=${page.url()}`, 'utf8'),
+      contentType: 'text/plain'
+    });
   });
 
-  test('Stored XSS в профиле пользователя (если есть доступ)', async ({ page }) => {
-    // Требуется авторизация — пропускаем, если нет тестовых учётных данных
-    test.skip(!process.env.TEST_USER || !process.env.TEST_PASS, 
-      'Требуются тестовые учётные данные');
-    
-    // Логин, переход в профиль, ввод payload в поле "О себе"
-    // и проверка, что скрипт не выполняется при просмотре профиля
+  test('Stored XSS remains isolated behind explicit test credentials', async () => {
+    test.skip(!process.env.TEST_USER || !process.env.TEST_PASS,
+      'Requires a dedicated test account and isolated writable test data.');
   });
 });

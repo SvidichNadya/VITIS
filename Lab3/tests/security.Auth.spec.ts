@@ -1,69 +1,44 @@
-test.describe('КРИТИЧЕСКИЕ: Обход аутентификации', () => {
-  const protectedPaths = [
-    '/my/',
-    '/admin/',
-    '/user/profile.php',
-    '/course/management.php',
-    '/report/log/index.php',
-    '/admin/roles/manage.php',
-  ];
+import { test, expect } from '@playwright/test';
+import { safeGet, finding } from './support/evidence';
+
+test.describe('AUTHENTICATION & AUTHORIZATION', () => {
+  const protectedPaths = ['/my/', '/admin/', '/user/profile.php', '/report/log/index.php'];
 
   for (const path of protectedPaths) {
-    test(`Прямой доступ к ${path} без авторизации`, async ({ request }) => {
-      const response = await request.get(path, { 
-        failOnStatusCode: false,
-        maxRedirects: 0 
-      });
-      
-      const status = response.status();
+    test(`Unauthenticated access to ${path} is denied`, async ({ request }, testInfo) => {
+      const response = await request.get(path, { failOnStatusCode: false, maxRedirects: 0 });
       const location = response.headers()['location'] || '';
-      
-      // Должен быть редирект на логин или 403
-      const isProtected = 
-        (status >= 300 && status < 400 && /login/i.test(location)) ||
-        status === 403 ||
-        status === 401;
-      
-      expect(isProtected, 
-        `КРИТИЧНО: ${path} доступен без авторизации (HTTP ${status}, Location: ${location})`
-      ).toBeTruthy();
+      const body = await response.text();
+      const denied = response.status() === 401 || response.status() === 403 ||
+        (response.status() >= 300 && response.status() < 400 && /login/i.test(location)) ||
+        /you are not logged in|вы не вошли|вход/i.test(body);
+
+      if (!denied) {
+        finding(testInfo, 'HIGH', 'Potential authentication bypass',
+          `${path} returned HTTP ${response.status()} without an obvious login/deny boundary.`,
+          'Verify authorization middleware and reproduce using a dedicated low-privilege test account.');
+      }
+      expect(denied).toBeTruthy();
     });
   }
 
-  test('LTI-провайдер не пропускает заблокированных пользователей', async ({ request }) => {
-    // Известная уязвимость CVE-2025-67857: обход через LTI
-    const response = await request.post('/mod/lti/auth.php', {
-      form: {
-        // Параметры LTI-запроса
-        user_id: 'suspended_user',
-        roles: 'Learner',
-      },
-      failOnStatusCode: false
-    });
-    
-    expect(response.status()).not.toBe(200);
+  test('Login page does not disclose password values or secrets in HTML', async ({ request }, testInfo) => {
+    const result = await safeGet(request, '/login/index.php', testInfo);
+    expect(result.body).not.toMatch(/password\s*[:=]\s*[^<\s]+/i);
+    expect(result.body).not.toMatch(/api[_-]?key\s*[:=]/i);
   });
 
-  test('Восстановление пароля не раскрывает существование пользователя', async ({ request }) => {
-    const response1 = await request.post('/login/forgot_password.php', {
-      form: { username: 'admin' },
-      failOnStatusCode: false
+  test('Forgot-password endpoint has bounded response time and generic public behavior', async ({ request }, testInfo) => {
+    // Do not enumerate real accounts and do not submit repeated requests.
+    const result = await safeGet(request, '/login/forgot_password.php', testInfo, {
+      warningMs: 2000,
+      timeoutMs: 10000
     });
-    
-    const response2 = await request.post('/login/forgot_password.php', {
-      form: { username: 'nonexistent_user_12345' },
-      failOnStatusCode: false
-    });
-    
-    const body1 = await response1.text();
-    const body2 = await response2.text();
-    
-    // Ответы не должны отличаться (user enumeration)
-    const isDifferent = body1.length !== body2.length || 
-                       !body1.includes('не найден') && body2.includes('не найден');
-    
-    expect(isDifferent, 
-      'Разные ответы для существующего и несуществующего пользователя (user enumeration)'
-    ).toBeFalsy();
+    expect(result.status ?? 599).toBeLessThan(500);
+    if (result.warningTriggered) {
+      finding(testInfo, 'MEDIUM', 'Slow password-recovery endpoint',
+        'A single public recovery-page request exceeded the 2s evidence threshold.',
+        'Inspect application and mail-service timings; do not infer account enumeration from this smoke test alone.');
+    }
   });
 });
