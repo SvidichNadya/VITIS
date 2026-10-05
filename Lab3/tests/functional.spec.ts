@@ -13,7 +13,7 @@ test.describe('FUNCTIONAL — публичная часть LMS SFEDU', () => {
       await expect(page.getByRole('heading', { name: 'Объявления сайта' })).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Руководство по LMS' })).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Новая платформа' })).toBeVisible();
-      await expect(page.getByRole('link', { name: 'Log in' })).toBeVisible();
+      await expect(page.locator('a[href*="login/index.php"]').first()).toBeVisible();
       await expect(page.locator('body')).toContainText(/You are not logged in|notloggedin/i);
     });
     await capturePageEvidence(page, testInfo, 'home', {
@@ -23,7 +23,7 @@ test.describe('FUNCTIONAL — публичная часть LMS SFEDU', () => {
   });
 
   test('Главная → Вход: рабочая публичная навигация', async ({ page }, testInfo) => {
-    await page.goto('/');
+    await page.goto('/?lang=en');
     await test.step('Нажать Log in на главной', async () => {
       await page.locator('a[href*="login/index.php"]').first().click();
       await expect(page).toHaveURL(/\/login\/index\.php/);
@@ -79,7 +79,7 @@ test.describe('FUNCTIONAL — публичная часть LMS SFEDU', () => {
   });
 
   test('Каталог: поиск принимает пользовательский ввод', async ({ page }, testInfo) => {
-    await page.goto('/course/index.php');
+    await page.goto('/course/index.php?lang=en');
     const search = page.getByRole('textbox', { name: /Search courses/i }).first();
     await expect(search).toBeVisible();
     await search.fill('2025-2026');
@@ -91,7 +91,7 @@ test.describe('FUNCTIONAL — публичная часть LMS SFEDU', () => {
   });
 
   test('Пустая форма входа не ломает страницу', async ({ page }, testInfo) => {
-    await page.goto('/login/index.php');
+    await page.goto('/login/index.php?lang=en');
     await page.getByRole('button', { name: /Log in|Вход/i }).click();
     await expect(page).toHaveURL(/\/login\/index\.php/);
     await expect(page.locator('input[name="username"]')).toBeVisible();
@@ -103,8 +103,8 @@ test.describe('FUNCTIONAL — публичная часть LMS SFEDU', () => {
   });
 
   test('Публичная навигация: каталог → вход', async ({ page }, testInfo) => {
-    await page.goto('/course/index.php');
-    await page.getByRole('link', { name: 'Log in' }).click();
+    await page.goto('/course/index.php?lang=en');
+    await page.locator('a[href*="login/index.php"]').first().click();
     await expect(page).toHaveURL(/\/login\/index\.php/);
     await attachJson(testInfo, 'navigation-summary.json', {
       actions: [
