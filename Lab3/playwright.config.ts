@@ -1,36 +1,35 @@
-// playwright.config.ts
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
-  timeout: 60_000,
-  expect: { timeout: 10_000 },
+  timeout: 45_000,
+  expect: { timeout: 8_000 },
   fullyParallel: false,
-  retries: 0,
+  retries: 1,
   workers: 1,
+  forbidOnly: !!process.env.CI,
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['./reporters/security-reporter.ts']  // Кастомный репортёр с оценкой рисков
+    ['./reporters/security-reporter.ts']
   ],
   use: {
     baseURL: process.env.BASE_URL || 'https://lms.sfedu.ru',
     browserName: 'chromium',
-    headless: true,
+    headless: process.env.HEADED !== '1',
     ignoreHTTPSErrors: false,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'retain-on-failure',
-    navigationTimeout: 60_000,
-    actionTimeout: 15_000,
-    // Для тестов с множественными запросами
+    navigationTimeout: 20_000,
+    actionTimeout: 10_000,
     extraHTTPHeaders: {
-      'User-Agent': 'Mozilla/5.0 (compatible; SecurityLab/1.0)'
+      'User-Agent': 'VITIS-Playwright-Lab/2.0 (authorized educational security smoke test)'
     }
   },
   projects: [
     {
-      name: 'security-chromium',
+      name: 'chromium-security',
       use: { ...devices['Desktop Chrome'] }
     }
   ]
