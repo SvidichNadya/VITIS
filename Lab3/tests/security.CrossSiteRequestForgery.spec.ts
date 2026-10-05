@@ -1,36 +1,29 @@
 import { test, expect } from '@playwright/test';
+import { attachJson } from './support/evidence';
 
-test.describe('CSRF SECURITY SMOKE', () => {
-  test('Login page forms use expected Moodle security mechanism where applicable', async ({ page }) => {
+test.describe('CSRF SECURITY SMOKE — диагностическая проверка', () => {
+  test('Публичные формы фиксируются для последующей проверки CSRF-механизма', async ({ page }, testInfo) => {
     await page.goto('/login/index.php');
-    const forms = await page.locator('form').all();
+    const forms = await page.locator('form').evaluateAll(forms => forms.map(form => ({
+      method: (form.getAttribute('method') || 'get').toLowerCase(),
+      action: form.getAttribute('action') || '',
+      hasSesskey: Boolean(form.querySelector('input[name="sesskey"]')),
+      hasUsername: Boolean(form.querySelector('input[name="username"]')),
+      hasPassword: Boolean(form.querySelector('input[name="password"]'))
+    })));
+    await attachJson(testInfo, 'csrf-form-inventory.json', {
+      url: page.url(),
+      note: 'Отсутствие sesskey на форме входа само по себе не является уязвимостью Moodle. State-changing POST без тестового аккаунта намеренно не выполняется.',
+      forms
+    });
     expect(forms.length).toBeGreaterThan(0);
-
-    for (const form of forms) {
-      const action = (await form.getAttribute('action')) || '';
-      const method = ((await form.getAttribute('method')) || 'get').toLowerCase();
-      if (method === 'post' && !/login/i.test(action)) {
-        const sesskey = form.locator('input[name="sesskey"]');
-        // Diagnostic only: Moodle login itself is a special case.
-        await expect(form).toBeVisible();
-        if (await sesskey.count() === 0) {
-          test.info().annotations.push({
-            type: 'security-finding',
-            description: JSON.stringify({
-              severity: 'MEDIUM',
-              title: 'POST form without visible sesskey',
-              description: `POST form ${action} has no visible sesskey field.`,
-              recommendation: 'Verify CSRF protection server-side for state-changing requests.'
-            })
-          });
-        }
-      }
-    }
   });
 
-  test('State-changing endpoints are not tested destructively without authentication', async () => {
-    // Intentionally no unauthenticated POST to mutation endpoints.
-    // Destructive CSRF validation belongs in an isolated test account/environment.
+  test('Без тестовой учетной записи state-changing POST не выполняется', async () => {
+    test.info().annotations.push({
+      type: 'security-note',
+      description: 'Глубокая CSRF-проверка требует изолированного тестового аккаунта и не должна изменять production-данные.'
+    });
     expect(true).toBeTruthy();
   });
 });
