@@ -1,0 +1,16 @@
+{
+  "name": "lms-sfedu-security-lab",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "playwright test",
+    "test:critical": "playwright test tests/security-critical.spec.ts",
+    "test:advanced": "playwright test tests/security-advanced.spec.ts",
+    "test:all": "playwright test tests/",
+    "report": "playwright show-report playwright-report",
+    "test:ci": "playwright test --reporter=html,list"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "typescript": "^5.0.0"
+  }
+}
