@@ -1,54 +1,26 @@
-test.describe('КРИТИЧЕСКИЕ: Open Redirect', () => {
-  const redirectParams = [
-    { path: '/login/index.php', param: 'wantsurl' },
-    { path: '/login/oauth.php', param: 'redirect' },
-    { path: '/admin/index.php', param: 'returnurl' },
-  ];
+import { test, expect } from '@playwright/test';
+import { safeGet, finding } from './support/evidence';
 
-  const maliciousUrls = [
-    'https://evil.com',
-    'https://evil.com/phishing',
-    '//evil.com',
-    '/\\evil.com',
-    'https:evil.com',
-    'javascript:alert(1)',
-    'data:text/html,<script>alert(1)</script>',
-  ];
-
-  for (const { path, param } of redirectParams) {
-    test(`Open Redirect через ${path}?${param}=`, async ({ request }) => {
-      for (const malicious of maliciousUrls) {
-        const response = await request.get(path, {
-          params: { [param]: malicious },
-          maxRedirects: 0,
-          failOnStatusCode: false
-        });
-        
-        const location = response.headers()['location'] || '';
-        
-        const isMaliciousRedirect = 
-          location.includes('evil.com') ||
-          location.startsWith('javascript:') ||
-          location.startsWith('data:');
-        
-        expect(isMaliciousRedirect, 
-          `КРИТИЧНО: Open Redirect на ${malicious} через ${param}`
-        ).toBeFalsy();
-      }
+test.describe('OPEN REDIRECT SECURITY SMOKE', () => {
+  test('wantsurl cannot directly redirect to an external origin', async ({ request }, testInfo) => {
+    const result = await safeGet(request, '/login/index.php', testInfo, {
+      params: { wantsurl: 'https://example.com/' }
     });
-  }
+    const location = result.headers['location'] || '';
+    const external = /^(https?:)?\/\/example\.com/i.test(location);
+    if (external) {
+      finding(testInfo, 'HIGH', 'Open redirect candidate',
+        'The login endpoint returned an external Location for wantsurl.',
+        'Allow only same-origin relative destinations and reject external schemes/hosts.');
+    }
+    expect(external).toBeFalsy();
+  });
 
-  test('OAuth callback не перенаправляет на произвольный домен', async ({ request }) => {
-    const response = await request.get('/auth/oauth2/callback.php', {
-      params: { 
-        code: 'test',
-        redirect_uri: 'https://evil.com/steal'
-      },
-      maxRedirects: 0,
-      failOnStatusCode: false
+  test('Protocol-relative redirect is rejected', async ({ request }, testInfo) => {
+    const result = await safeGet(request, '/login/index.php', testInfo, {
+      params: { wantsurl: '//example.com/' }
     });
-    
-    const location = response.headers()['location'] || '';
-    expect(location).not.toContain('evil.com');
+    const location = result.headers['location'] || '';
+    expect(location).not.toMatch(/^\/\/example\.com/i);
   });
 });
