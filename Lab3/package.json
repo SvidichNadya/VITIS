@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "test": "playwright test --config=playwright.chrome.config.ts",
-    "test:functional": "playwright test --config=playwright.chrome.config.ts tests/public.spec.ts",
+    "test:functional": "playwright test --config=playwright.chrome.config.ts tests/functional.spec.ts",
     "test:security": "playwright test --config=playwright.chrome.config.ts tests/security.spec.ts tests/security.Auth.spec.ts tests/security.CrossSiteRequestForgery.spec.ts tests/security.CrossSiteScripting.spec.ts tests/security.OpenRedirect.spec.ts tests/security.PublicAttackSurface.spec.ts tests/security.sql.spec.ts tests/secuutiry.SessionFixation.spec.ts tests/security.advanced.spec.ts",
     "test:critical": "playwright test --config=playwright.chrome.config.ts tests/security.Auth.spec.ts tests/security.CrossSiteRequestForgery.spec.ts",
     "test:advanced": "playwright test --config=playwright.chrome.config.ts tests/security.advanced.spec.ts",
