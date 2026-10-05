@@ -1,12 +1,13 @@
 {
   "name": "lms-sfedu-playwright-security-lab",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "scripts": {
     "test": "playwright test",
     "test:functional": "playwright test tests/public.spec.ts",
     "test:security": "playwright test tests/security.spec.ts tests/security.Auth.spec.ts tests/security.CrossSiteRequestForgery.spec.ts tests/security.CrossSiteScripting.spec.ts tests/security.OpenRedirect.spec.ts tests/security.sql.spec.ts tests/secuutiry.SessionFixation.spec.ts tests/security.advanced.spec.ts",
     "test:critical": "playwright test tests/security.Auth.spec.ts tests/security.CrossSiteRequestForgery.spec.ts",
+    "test:authorization": "playwright test tests/security.AuthorizationBoundary.spec.ts",
     "test:advanced": "playwright test tests/security.advanced.spec.ts",
     "test:all": "playwright test tests/",
     "test:headed": "playwright test --headed",
