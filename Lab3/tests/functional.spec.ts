@@ -13,7 +13,8 @@ test.describe('FUNCTIONAL — публичная часть LMS SFEDU', () => {
       await expect(page.getByRole('heading', { name: 'Объявления сайта' })).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Руководство по LMS' })).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Новая платформа' })).toBeVisible();
-      await expect(page.getByText('You are not logged in.')).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Log in' })).toBeVisible();
+      await expect(page.locator('body')).toContainText(/You are not logged in|notloggedin/i);
     });
     await capturePageEvidence(page, testInfo, 'home', {
       action: 'Открыта главная страница',
