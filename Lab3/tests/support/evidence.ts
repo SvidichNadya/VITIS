@@ -3,6 +3,17 @@ import { APIRequestContext, Page, TestInfo } from '@playwright/test';
 export const WARNING_MS = Number(process.env.WARNING_MS || 2000);
 export const HARD_TIMEOUT_MS = Number(process.env.HARD_TIMEOUT_MS || 10000);
 
+export type SafeGetResult = {
+  url: string;
+  status: number | null;
+  elapsedMs: number;
+  warningTriggered: boolean;
+  serverError: boolean;
+  body: string;
+  headers: Record<string, string>;
+  error?: string;
+};
+
 export async function attachJson(testInfo: TestInfo, name: string, value: unknown) {
   await testInfo.attach(name, {
     body: Buffer.from(JSON.stringify(value, null, 2), 'utf-8'),
@@ -35,7 +46,7 @@ export async function safeGet(
   path: string,
   testInfo: TestInfo,
   options: { warningMs?: number; timeoutMs?: number; params?: Record<string, string> } = {}
-) {
+): Promise<SafeGetResult> {
   const warningMs = options.warningMs ?? WARNING_MS;
   const timeoutMs = options.timeoutMs ?? HARD_TIMEOUT_MS;
   const started = Date.now();
