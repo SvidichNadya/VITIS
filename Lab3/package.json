@@ -3,16 +3,16 @@
   "version": "2.1.0",
   "private": true,
   "scripts": {
-    "test": "playwright test",
-    "test:functional": "playwright test tests/public.spec.ts",
-    "test:security": "playwright test tests/security.spec.ts tests/security.Auth.spec.ts tests/security.CrossSiteRequestForgery.spec.ts tests/security.CrossSiteScripting.spec.ts tests/security.OpenRedirect.spec.ts tests/security.PublicAttackSurface.spec.ts tests/security.sql.spec.ts tests/secuutiry.SessionFixation.spec.ts tests/security.advanced.spec.ts",
-    "test:critical": "playwright test tests/security.Auth.spec.ts tests/security.CrossSiteRequestForgery.spec.ts",
-    "test:advanced": "playwright test tests/security.advanced.spec.ts",
-    "test:all": "playwright test tests/",
-    "test:headed": "playwright test --headed",
+    "test": "playwright test --config=playwright.chrome.config.ts",
+    "test:functional": "playwright test --config=playwright.chrome.config.ts tests/public.spec.ts",
+    "test:security": "playwright test --config=playwright.chrome.config.ts tests/security.spec.ts tests/security.Auth.spec.ts tests/security.CrossSiteRequestForgery.spec.ts tests/security.CrossSiteScripting.spec.ts tests/security.OpenRedirect.spec.ts tests/security.PublicAttackSurface.spec.ts tests/security.sql.spec.ts tests/secuutiry.SessionFixation.spec.ts tests/security.advanced.spec.ts",
+    "test:critical": "playwright test --config=playwright.chrome.config.ts tests/security.Auth.spec.ts tests/security.CrossSiteRequestForgery.spec.ts",
+    "test:advanced": "playwright test --config=playwright.chrome.config.ts tests/security.advanced.spec.ts",
+    "test:all": "playwright test --config=playwright.chrome.config.ts tests/",
+    "test:headed": "playwright test --config=playwright.chrome.config.ts --headed",
     "report": "playwright show-report playwright-report",
-    "test:ci": "playwright test --reporter=html,list",
-    "test:blackbox": "playwright test tests/security.PublicAttackSurface.spec.ts"
+    "test:ci": "playwright test --config=playwright.chrome.config.ts --reporter=html,list",
+    "test:blackbox": "playwright test --config=playwright.chrome.config.ts tests/security.PublicAttackSurface.spec.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
