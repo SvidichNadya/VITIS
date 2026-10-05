@@ -4,7 +4,7 @@ import { capturePageEvidence, attachJson } from './support/evidence';
 test.describe('FUNCTIONAL — публичная часть LMS SFEDU', () => {
   test('Главная страница открывается и содержит реальные публичные блоки', async ({ page }, testInfo) => {
     await test.step('Открыть LMS', async () => {
-      const response = await page.goto('/');
+      const response = await page.goto('/?lang=en');
       expect(response).not.toBeNull();
       expect(response!.status()).toBeLessThan(500);
     });
@@ -25,15 +25,15 @@ test.describe('FUNCTIONAL — публичная часть LMS SFEDU', () => {
   test('Главная → Вход: рабочая публичная навигация', async ({ page }, testInfo) => {
     await page.goto('/');
     await test.step('Нажать Log in на главной', async () => {
-      await page.getByRole('link', { name: 'Log in' }).click();
+      await page.locator('a[href*="login/index.php"]').first().click();
       await expect(page).toHaveURL(/\/login\/index\.php/);
     });
     await test.step('Проверить страницу входа', async () => {
       await expect(page.getByRole('heading', { name: /Log in to Система электронного обучения ИКТИБ ЮФУ/i })).toBeVisible();
       await expect(page.locator('input[name="username"]')).toBeVisible();
       await expect(page.locator('input[name="password"]')).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Log in' })).toBeVisible();
-      await expect(page.getByRole('link', { name: 'Lost password?' })).toBeVisible();
+      await expect(page.getByRole('button', { name: /Log in|Вход/i })).toBeVisible();
+      await expect(page.getByRole('link', { name: /Lost password|Забыли пароль/i })).toBeVisible();
     });
     await capturePageEvidence(page, testInfo, 'login', {
       action: 'Главная → Log in',
@@ -42,9 +42,9 @@ test.describe('FUNCTIONAL — публичная часть LMS SFEDU', () => {
   });
 
   test('Вход → Восстановление пароля', async ({ page }, testInfo) => {
-    await page.goto('/login/index.php');
+    await page.goto('/login/index.php?lang=en');
     await test.step('Перейти по Lost password?', async () => {
-      await page.getByRole('link', { name: 'Lost password?' }).click();
+      await page.getByRole('link', { name: /Lost password|Забыли пароль/i }).click();
       await expect(page).toHaveURL(/\/login\/forgot_password\.php/);
     });
     await test.step('Проверить две формы поиска пользователя', async () => {
@@ -60,7 +60,7 @@ test.describe('FUNCTIONAL — публичная часть LMS SFEDU', () => {
   });
 
   test('Каталог курсов: категории и переход в категорию', async ({ page }, testInfo) => {
-    await page.goto('/course/index.php');
+    await page.goto('/course/index.php?lang=en');
     await test.step('Проверить каталог', async () => {
       await expect(page.getByText('Search courses', { exact: true }).first()).toBeVisible();
       for (const name of ['2024-2025', '2025-2026', 'Промежуточная категория', 'ДПО', 'ГЭК']) {
@@ -92,7 +92,7 @@ test.describe('FUNCTIONAL — публичная часть LMS SFEDU', () => {
 
   test('Пустая форма входа не ломает страницу', async ({ page }, testInfo) => {
     await page.goto('/login/index.php');
-    await page.getByRole('button', { name: 'Log in' }).click();
+    await page.getByRole('button', { name: /Log in|Вход/i }).click();
     await expect(page).toHaveURL(/\/login\/index\.php/);
     await expect(page.locator('input[name="username"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
