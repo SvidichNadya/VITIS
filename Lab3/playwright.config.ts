@@ -15,6 +15,7 @@ export default defineConfig({
   ],
   use: {
     baseURL: process.env.BASE_URL || 'https://lms.sfedu.ru',
+    channel: 'chrome',
     browserName: 'chromium',
     headless: process.env.HEADED !== '1',
     ignoreHTTPSErrors: false,
